@@ -1,0 +1,38 @@
+# Python virtual environment
+venv/
+.venv/
+env/
+
+# Environment variables — NEVER commit this
+.env
+
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Raw/processed data (can be large)
+data/raw/
+data/processed/
+
+# pytest cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# macOS junk
+.DS_Store
+
+# VS Code settings (optional — keep if you want to share editor config)
+# .vscode/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/

@@ -1,0 +1,23 @@
+# Requirements for AI Archaeologist - Phase 1
+# Install all of these with: pip install -r requirements.txt
+
+# Web framework
+flask==3.0.3
+
+# HTTP requests library (used to call the GitHub API)
+requests==2.32.3
+
+# Environment variable management (reads .env file)
+python-dotenv==1.0.1
+
+# Database ORM (makes SQLite feel like Python objects)
+sqlalchemy==2.0.36
+
+# Flask extension to integrate SQLAlchemy cleanly
+flask-sqlalchemy==3.1.1
+
+# Testing framework
+pytest==8.3.3
+
+# Makes HTTP mocking easy for tests
+pytest-mock==3.14.0
