@@ -6,6 +6,7 @@ from backend.models import db
 from backend.models.repository import Repository
 from backend.services.github_service import GitHubService
 from backend.utils.validators import validate_github_url
+from backend.services.commit_service import CommitService
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +108,15 @@ class RepositoryService:
                     setattr(repository, field, value)
 
             db.session.commit()
+            commit_result = CommitService(
+            github_service=self.github
+            ).collect_commits(repository)
 
+            if not commit_result.get("success"):
+            logger.warning(
+            "Repository metadata saved, but commit collection failed: %s",
+            commit_result.get("error"),
+            )
             return {
                 "success": True,
                 "message": "Repository analyzed successfully.",

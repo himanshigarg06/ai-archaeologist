@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request
 
 from backend.services.repository_service import RepositoryService
 from backend.models.repository import Repository
+from backend.models.commit import Commit
 
 logger = logging.getLogger(__name__)
 repository_bp = Blueprint("repository", __name__)
@@ -40,12 +41,33 @@ def get_repository(owner, repo):
     }), 200
 
 
+
 @repository_bp.route("/<owner>/<repo>/commits", methods=["GET"])
 def get_commits(owner, repo):
+    repository = Repository.query.filter_by(
+        owner=owner,
+        name=repo,
+    ).first()
+
+    if repository is None:
+        return jsonify({
+            "success": False,
+            "error": "Repository not found. Analyze it first.",
+        }), 404
+
+    commits = (
+        Commit.query
+        .filter_by(repository_id=repository.id)
+        .order_by(Commit.committed_at.desc())
+        .all()
+    )
+
     return jsonify({
-        "success": False,
-        "message": "Commit storage is the next step.",
-    }), 501
+        "success": True,
+        "count": len(commits),
+        "data": [commit.to_dict() for commit in commits],
+    }), 200
+
 
 
 @repository_bp.route("/<owner>/<repo>/contributors", methods=["GET"])
