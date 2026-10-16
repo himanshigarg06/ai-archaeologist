@@ -2,7 +2,7 @@
 import logging
 
 from flask import Blueprint, jsonify, request
-
+from backend.services.commit_service import CommitService
 from backend.services.repository_service import RepositoryService
 from backend.models.repository import Repository
 from backend.models.commit import Commit
@@ -67,6 +67,29 @@ def get_commits(owner, repo):
         "count": len(commits),
         "data": [commit.to_dict() for commit in commits],
     }), 200
+
+@repository_bp.route(
+    "/<owner>/<repo>/enrich-commits",
+    methods=["POST"],
+)
+def enrich_commits(owner, repo):
+    repository = Repository.query.filter_by(
+        owner=owner,
+        name=repo,
+    ).first()
+
+    if repository is None:
+        return jsonify({
+            "success": False,
+            "error": "Repository not found. Analyze it first.",
+        }), 404
+
+    result = CommitService().enrich_missing_stats(
+        repository,
+        batch_size=20,
+    )
+
+    return jsonify(result), (200 if result.get("success") else 500)
 
 
 

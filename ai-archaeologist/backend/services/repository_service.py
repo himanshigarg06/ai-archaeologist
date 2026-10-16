@@ -107,22 +107,26 @@ class RepositoryService:
                 if hasattr(repository, field):
                     setattr(repository, field, value)
 
+
             db.session.commit()
+
             commit_result = CommitService(
-            github_service=self.github
+                github_service=self.github
             ).collect_commits(repository)
 
             if not commit_result.get("success"):
-            logger.warning(
-            "Repository metadata saved, but commit collection failed: %s",
-            commit_result.get("error"),
-            )
+                logger.warning(
+                    "Repository metadata saved, but commit collection failed: %s",
+                    commit_result.get("error"),
+                )
+
             return {
                 "success": True,
                 "message": "Repository analyzed successfully.",
                 "data": repository.to_dict(),
                 "status_code": 200,
             }
+
 
         except Exception:
             db.session.rollback()

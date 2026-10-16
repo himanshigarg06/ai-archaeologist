@@ -163,3 +163,91 @@ class CommitService:
                 "warning": warning,
             },
         }
+
+    def enrich_missing_stats(self, repository, batch_size=20):
+        """Fetch detailed statistics for commits that are missing them."""
+        missing_commits = (
+            Commit.query
+            .filter_by(repository_id=repository.id)
+            .filter(
+                db.or_(
+                    Commit.additions.is_(None),
+                    Commit.deletions.is_(None),
+                    Commit.total_changes.is_(None),
+                    Commit.files_changed.is_(None),
+                )
+            )
+            .order_by(Commit.committed_at.desc())
+            .limit(batch_size)
+            .all()
+        )
+
+        enriched = 0
+        failed = 0
+
+        for commit in missing_commits:
+            result = self.github.get_commit_detail(
+                repository.owner,
+                repository.name,
+                commit.sha,
+            )
+
+            if not result.get("success"):
+                failed += 1
+                logger.warning(
+                    "Could not enrich commit %s: %s",
+                    commit.sha[:8],
+                    result.get("error", "Unknown error"),
+                )
+                continue
+
+            detail = result.get("data", {})
+            stats = detail.get("stats") or {}
+            files = detail.get("files") or []
+
+            if not all(key in stats for key in ("additions", "deletions", "total")):
+            failed += 1
+            logger.warning(
+                "Commit statistics unavailable for %s",
+                commit.sha[:8],
+            )
+            continue
+
+            commit.additions = stats["additions"]
+            commit.deletions = stats["deletions"]
+            commit.total_changes = stats["total"]
+            commit.files_changed = len(files)
+            enriched += 1
+
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            logger.exception("Failed to save enriched commit statistics")
+            return {
+                "success": False,
+                "error": "Could not save enriched commit statistics.",
+            }
+
+        return {
+            "success": True,
+            "data": {
+                "attempted": len(missing_commits),
+                "enriched": enriched,
+                "failed": failed,
+                "remaining_estimate": max(
+                    0,
+                    Commit.query.filter_by(
+                        repository_id=repository.id
+                    ).filter(
+                        db.or_(
+                            Commit.additions.is_(None),
+                            Commit.deletions.is_(None),
+                            Commit.total_changes.is_(None),
+                            Commit.files_changed.is_(None),
+                        )
+                    ).count(),
+                ),
+            },
+        }
+
